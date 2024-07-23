@@ -11,7 +11,6 @@ from utils.comprehend_manager import AWSComprehendManager
 from utils.data_processing import preprocess_data, generate_synthetic_data, convert_df
 from utils.prediction import make_predictions, classify_document
 
-
 # Initialize Comprehend Manager
 manager = AWSComprehendManager()
 
@@ -63,13 +62,11 @@ if not is_logged_in:
 def logout():
     authenticator.logout()
 
-
 # Sidebar with user info and logout button
 with st.sidebar:
     st.image(logo_path, use_column_width=True)  # Display logo on logged-in page
     st.text(f"Willkommen,\n{authenticator.get_username()}")
     st.button("Abmelden", "logout_btn", on_click=logout)
-
 
 def display_classification_result(result):
     if result:
@@ -87,7 +84,6 @@ def display_classification_result(result):
     else:
         st.write("Fehler beim Klassifizieren des Textes.")
 
-
 def show_instructions():
     st.write("""
         Um Ihre CSV-Datei hochzuladen und zu verarbeiten, stellen Sie bitte sicher, dass sie die folgenden Anforderungen erfüllt:
@@ -98,7 +94,6 @@ def show_instructions():
            - **Nachricht**
     """)
     st.write("Sehen Sie sich die synthetische CSV-Datei als Beispiel an oder laden Sie sie herunter.")
-
 
 def process_uploaded_file(uploaded_file, use_synthetic_data):
     try:
@@ -120,14 +115,12 @@ def process_uploaded_file(uploaded_file, use_synthetic_data):
     except Exception as e:
         st.error(f"Ein Fehler ist aufgetreten: {e}")
 
-
 def read_csv_file(uploaded_file):
     raw_data = uploaded_file.read()
     result = chardet.detect(raw_data)
     encoding = result['encoding']
     uploaded_file.seek(0)
     return pd.read_csv(StringIO(raw_data.decode(encoding)), sep=None, engine='python')
-
 
 def display_analysis(predicted_df):
     analysis = predicted_df['Primary Class'].value_counts()
@@ -138,7 +131,6 @@ def display_analysis(predicted_df):
     ax.set_xlabel('Kategorie')
     ax.set_ylabel('Anzahl')
     st.pyplot(fig)
-
 
 def update_endpoint_status(endpoint_arn):
     status = manager.check_endpoint_status(endpoint_arn)
@@ -152,7 +144,6 @@ def update_endpoint_status(endpoint_arn):
         st.session_state.endpoint_ready = True
     else:
         status_message.error("Fehler bei der Erstellung des Endpunkts oder unerwarteter Zustand.")
-
 
 # Function to check and update endpoint status
 def check_or_create_endpoint():
@@ -174,7 +165,6 @@ def check_or_create_endpoint():
     else:
         endpoint_arn = st.session_state.endpoint_arn
         update_endpoint_status(endpoint_arn)
-
 
 # Check or create endpoint at the start
 check_or_create_endpoint()

@@ -1,4 +1,4 @@
-import subprocess
+import boto3
 import json
 import streamlit as st
 from datetime import datetime
@@ -6,25 +6,20 @@ from datetime import datetime
 class AWSComprehendManager:
     def __init__(self):
         self.now = datetime.now().strftime("%Y%m%d%H%M%S")
+        self.comprehend_client = boto3.client('comprehend')
 
     def list_endpoints(self):
         """
-        List existing AWS Comprehend endpoints using AWS CLI.
+        List existing AWS Comprehend endpoints using boto3.
 
         Returns:
         list: A list of endpoint ARNs.
         """
         try:
-            result = subprocess.run(
-                ["aws", "comprehend", "list-endpoints"],
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            response = json.loads(result.stdout)
+            response = self.comprehend_client.list_endpoints()
             return [ep["EndpointArn"] for ep in response["EndpointPropertiesList"]]
-        except subprocess.CalledProcessError as e:
-            st.error(f"Error listing endpoints: {e.stderr}")
+        except Exception as e:
+            st.error(f"Error listing endpoints: {str(e)}")
             return []
 
     def find_active_endpoint(self):
@@ -43,7 +38,7 @@ class AWSComprehendManager:
 
     def create_endpoint(self, model_arn, inference_units=1):
         """
-        Create an AWS Comprehend endpoint using AWS CLI.
+        Create an AWS Comprehend endpoint using boto3.
 
         Args:
         model_arn (str): The ARN of the Comprehend model.
@@ -53,27 +48,20 @@ class AWSComprehendManager:
         str: The ARN of the created endpoint.
         """
         try:
-            result = subprocess.run(
-                [
-                    "aws", "comprehend", "create-endpoint",
-                    "--desired-inference-units", str(inference_units),
-                    "--endpoint-name", f"vbv-frontend-endpoint-{self.now}",
-                    "--model-arn", model_arn,
-                    "--tags", "Key=My1stTag,Value=Value1"
-                ],
-                capture_output=True,
-                text=True,
-                check=True
+            response = self.comprehend_client.create_endpoint(
+                EndpointName=f"vbv-frontend-endpoint-{self.now}",
+                ModelArn=model_arn,
+                DesiredInferenceUnits=inference_units,
+                Tags=[{"Key": "My1stTag", "Value": "Value1"}]
             )
-            response = json.loads(result.stdout)
             return response["EndpointArn"]
-        except subprocess.CalledProcessError as e:
-            st.error(f"Error creating endpoint: {e.stderr}")
+        except Exception as e:
+            st.error(f"Error creating endpoint: {str(e)}")
             return None
 
     def check_endpoint_status(self, endpoint_arn):
         """
-        Check the status of an AWS Comprehend endpoint using AWS CLI.
+        Check the status of an AWS Comprehend endpoint using boto3.
 
         Args:
         endpoint_arn (str): The ARN of the Comprehend endpoint.
@@ -82,17 +70,10 @@ class AWSComprehendManager:
         str: The status of the endpoint.
         """
         try:
-            result = subprocess.run(
-                [
-                    "aws", "comprehend", "describe-endpoint",
-                    "--endpoint-arn", endpoint_arn
-                ],
-                capture_output=True,
-                text=True,
-                check=True
+            response = self.comprehend_client.describe_endpoint(
+                EndpointArn=endpoint_arn
             )
-            response = json.loads(result.stdout)
             return response["EndpointProperties"]["Status"]
-        except subprocess.CalledProcessError as e:
-            st.error(f"Error checking endpoint status: {e.stderr}")
+        except Exception as e:
+            st.error(f"Error checking endpoint status: {str(e)}")
             return None

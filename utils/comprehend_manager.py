@@ -1,12 +1,18 @@
 import boto3
 import json
+import os
 import streamlit as st
 from datetime import datetime
 
 class AWSComprehendManager:
-    def __init__(self, region_name):
+    def __init__(self, region_name, aws_access_key_id, aws_secret_access_key):
         self.now = datetime.now().strftime("%Y%m%d%H%M%S")
-        self.comprehend_client = boto3.client('comprehend', region_name=region_name)
+        self.comprehend_client = boto3.client(
+            'comprehend', 
+            region_name=region_name,
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key
+            )
 
     def list_endpoints(self):
         try:

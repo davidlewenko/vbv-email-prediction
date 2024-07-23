@@ -1,4 +1,5 @@
 import os
+import boto3
 import time
 import pandas as pd
 import chardet
@@ -16,10 +17,20 @@ model_arn = os.getenv('MODEL_ARN')
 pool_id = os.getenv("POOL_ID")
 app_client_id = os.getenv("APP_CLIENT_ID")
 app_client_secret = os.getenv("APP_CLIENT_SECRET")
+aws_access_key_id = os.getenv('AWS_ACCESS_KEY_ID')
+aws_secret_access_key = os.getenv('AWS_SECRET_ACCESS_KEY')
 region_name = "eu-central-1"
 
 # Initialize Comprehend Manager
-manager = AWSComprehendManager(region_name=region_name)
+manager = AWSComprehendManager(region_name=region_name, aws_access_key_id=aws_access_key_id, aws_secret_access_key=aws_secret_access_key)
+
+# Initialize boto3 client for Comprehend
+comprehend_client = boto3.client(
+    'comprehend',
+    region_name=region_name,
+    aws_access_key_id=aws_access_key_id,
+    aws_secret_access_key=aws_secret_access_key
+)
 
 # Set Streamlit page configuration
 st.set_page_config(page_title="VBV: E-Mail Classifier", layout="centered")
@@ -101,7 +112,7 @@ def process_uploaded_file(uploaded_file, use_synthetic_data):
         st.write(df)
 
         preprocessed_df = preprocess_data(df)
-        predicted_df = make_predictions(preprocessed_df, st.session_state.endpoint_arn)
+        predicted_df = make_predictions(preprocessed_df, st.session_state.endpoint_arn, comprehend_client)
         st.write("Vorhersagen:")
         st.write(predicted_df)
 

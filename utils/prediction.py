@@ -1,34 +1,27 @@
-import subprocess
+import boto3
 import json
 import time
 import streamlit as st
 
-def classify_document(text, endpoint_arn, max_retries=5):
+def classify_document(text, endpoint_arn, comprehend_client, max_retries=5):
     retries = 0
     while retries < max_retries:
         try:
-            result = subprocess.run(
-                [
-                    "aws", "comprehend", "classify-document",
-                    "--endpoint-arn", endpoint_arn,
-                    "--text", text
-                ],
-                capture_output=True,
-                text=True,
-                check=True
+            response = comprehend_client.classify_document(
+                Text=text,
+                EndpointArn=endpoint_arn
             )
-            return json.loads(result.stdout)
-        except subprocess.CalledProcessError as e:
-            if 'ThrottlingException' in e.stderr:
-                retries += 1
-                time.sleep(2 ** retries)
-            else:
-                print(f"Error: {e.stderr}")
-                return None
+            return response
+        except comprehend_client.exceptions.ThrottlingException:
+            retries += 1
+            time.sleep(2 ** retries)
+        except Exception as e:
+            print(f"Error: {str(e)}")
+            return None
     return None
 
 @st.cache_data
-def make_predictions(df, endpoint_arn):
+def make_predictions(df, endpoint_arn, comprehend_client):
     primary_classes = []
     primary_scores = []
     other_classes = []
@@ -39,8 +32,8 @@ def make_predictions(df, endpoint_arn):
 
     i = 0
     while i < len(df):
-        text = df.at[i, 'Nachricht']
-        result = classify_document(text, endpoint_arn)
+        text = df.at(i, 'Nachricht')
+        result = classify_document(text, endpoint_arn, comprehend_client)
         if result:
             classes = result.get('Classes', [])
             if classes:

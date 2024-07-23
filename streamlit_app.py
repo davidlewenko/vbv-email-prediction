@@ -11,17 +11,18 @@ from utils.comprehend_manager import AWSComprehendManager
 from utils.data_processing import preprocess_data, generate_synthetic_data, convert_df
 from utils.prediction import make_predictions, classify_document
 
-# Initialize Comprehend Manager
-manager = AWSComprehendManager()
-
-# Set Streamlit page configuration
-st.set_page_config(page_title="VBV: E-Mail Classifier", layout="centered")
-
 # Retrieve environment variables
 model_arn = os.getenv('MODEL_ARN')
 pool_id = os.getenv("POOL_ID")
 app_client_id = os.getenv("APP_CLIENT_ID")
 app_client_secret = os.getenv("APP_CLIENT_SECRET")
+region_name = os.getenv("AWS_REGION")  # Add this line to retrieve the region
+
+# Initialize Comprehend Manager
+manager = AWSComprehendManager(region_name=region_name)
+
+# Set Streamlit page configuration
+st.set_page_config(page_title="VBV: E-Mail Classifier", layout="centered")
 
 # Initialize session state variables
 if 'endpoint_arn' not in st.session_state:
@@ -47,14 +48,13 @@ logo_placeholder = st.empty()
 is_logged_in = authenticator.login()
 
 if not is_logged_in:
-    # Display the centered logo above the login menu using the placeholder
     with logo_placeholder.container():
         col1, col2, col3 = st.columns([1, 2, 1])
         with col1:
             st.write(' ')
         with col2:
             st.image(logo_path, width=350)
-            st.write(' ')  # Adjust spacing if necessary
+            st.write(' ')
         with col3:
             st.write(' ')
     st.stop()
@@ -62,9 +62,8 @@ if not is_logged_in:
 def logout():
     authenticator.logout()
 
-# Sidebar with user info and logout button
 with st.sidebar:
-    st.image(logo_path, use_column_width=True)  # Display logo on logged-in page
+    st.image(logo_path, use_column_width=True)
     st.text(f"Willkommen,\n{authenticator.get_username()}")
     st.button("Abmelden", "logout_btn", on_click=logout)
 
@@ -145,7 +144,6 @@ def update_endpoint_status(endpoint_arn):
     else:
         status_message.error("Fehler bei der Erstellung des Endpunkts oder unerwarteter Zustand.")
 
-# Function to check and update endpoint status
 def check_or_create_endpoint():
     if st.session_state.endpoint_arn is None:
         with st.spinner("Überprüfen oder Erstellen des AWS Comprehend Endpunkts..."):
@@ -166,12 +164,9 @@ def check_or_create_endpoint():
         endpoint_arn = st.session_state.endpoint_arn
         update_endpoint_status(endpoint_arn)
 
-# Check or create endpoint at the start
 check_or_create_endpoint()
 
-# Enable free text and file upload options only if the endpoint is active
 if st.session_state.endpoint_ready:
-    # Free text prediction
     with st.expander("Freitext eingeben"):
         free_text = st.text_area("Geben Sie hier Ihren Text ein:")
         if st.button("Freitext klassifizieren"):
@@ -181,7 +176,6 @@ if st.session_state.endpoint_ready:
             else:
                 st.write("Bitte geben Sie einen Text ein.")
 
-    # File and synthetic data upload
     with st.expander("Datei hochladen oder synthetische Daten verwenden"):
         if st.button("Anleitung für CSV-Datei-Upload anzeigen"):
             show_instructions()

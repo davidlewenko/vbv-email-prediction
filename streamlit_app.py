@@ -16,7 +16,7 @@ model_arn = os.getenv('MODEL_ARN')
 pool_id = os.getenv("POOL_ID")
 app_client_id = os.getenv("APP_CLIENT_ID")
 app_client_secret = os.getenv("APP_CLIENT_SECRET")
-region_name = os.getenv("AWS_REGION")  # Add this line to retrieve the region
+region_name = "eu-central-1"
 
 # Initialize Comprehend Manager
 manager = AWSComprehendManager(region_name=region_name)

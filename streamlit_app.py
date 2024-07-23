@@ -112,7 +112,7 @@ def process_uploaded_file(uploaded_file, use_synthetic_data):
         st.write(df)
 
         preprocessed_df = preprocess_data(df)
-        predicted_df = make_predictions(preprocessed_df, st.session_state.endpoint_arn, comprehend_client)
+        predicted_df = make_predictions(preprocessed_df, st.session_state.endpoint_arn, _comprehend_client=comprehend_client)
         st.write("Vorhersagen:")
         st.write(predicted_df)
 

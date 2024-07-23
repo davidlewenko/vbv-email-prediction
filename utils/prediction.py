@@ -21,7 +21,7 @@ def classify_document(text, endpoint_arn, comprehend_client, max_retries=5):
     return None
 
 @st.cache_data
-def make_predictions(df, endpoint_arn, comprehend_client):
+def make_predictions(df, endpoint_arn, _comprehend_client):
     primary_classes = []
     primary_scores = []
     other_classes = []
@@ -32,8 +32,8 @@ def make_predictions(df, endpoint_arn, comprehend_client):
 
     i = 0
     while i < len(df):
-        text = df.at(i, 'Nachricht')
-        result = classify_document(text, endpoint_arn, comprehend_client)
+        text = df.at[i, 'Nachricht']
+        result = classify_document(text, endpoint_arn, _comprehend_client)
         if result:
             classes = result.get('Classes', [])
             if classes:
@@ -61,3 +61,4 @@ def make_predictions(df, endpoint_arn, comprehend_client):
     df['Other Classes'] = other_classes
     df['Other Scores'] = other_scores
     return df
+

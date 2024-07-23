@@ -182,7 +182,7 @@ if st.session_state.endpoint_ready:
         free_text = st.text_area("Geben Sie hier Ihren Text ein:")
         if st.button("Freitext klassifizieren"):
             if free_text:
-                result = classify_document(free_text, st.session_state.endpoint_arn)
+                result = classify_document(free_text, st.session_state.endpoint_arn, comprehend_client)
                 display_classification_result(result)
             else:
                 st.write("Bitte geben Sie einen Text ein.")

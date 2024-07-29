@@ -3,7 +3,7 @@ import json
 import time
 import streamlit as st
 
-def classify_document(text, endpoint_arn, comprehend_client, max_retries=5):
+def classify_document(text, endpoint_arn, comprehend_client, max_retries=10, initial_backoff=1):
     retries = 0
     while retries < max_retries:
         try:
@@ -12,9 +12,10 @@ def classify_document(text, endpoint_arn, comprehend_client, max_retries=5):
                 EndpointArn=endpoint_arn
             )
             return response
-        except comprehend_client.exceptions.ThrottlingException:
+        except comprehend_client.exceptions.TooManyRequestsException:
+            backoff = initial_backoff * (2 ** retries)
+            time.sleep(backoff)
             retries += 1
-            time.sleep(2 ** retries)
         except Exception as e:
             print(f"Error: {str(e)}")
             return None
@@ -30,9 +31,7 @@ def make_predictions(df, endpoint_arn, _comprehend_client):
     st.write("Progress... Please wait...")
     progress_bar = st.progress(0)
 
-    i = 0
-    while i < len(df):
-        text = df.at[i, 'Nachricht']
+    for i, text in enumerate(df['Nachricht']):
         result = classify_document(text, endpoint_arn, _comprehend_client)
         if result:
             classes = result.get('Classes', [])
@@ -50,15 +49,16 @@ def make_predictions(df, endpoint_arn, _comprehend_client):
                 primary_scores.append("")
                 other_classes.append("")
                 other_scores.append("")
-            i += 1
         else:
-            time.sleep(1)
+            primary_classes.append("")
+            primary_scores.append("")
+            other_classes.append("")
+            other_scores.append("")
 
-        progress_bar.progress(i / len(df))
+        progress_bar.progress((i + 1) / len(df))
 
     df['Primary Class'] = primary_classes
     df['Primary Score'] = primary_scores
     df['Other Classes'] = other_classes
     df['Other Scores'] = other_scores
     return df
-

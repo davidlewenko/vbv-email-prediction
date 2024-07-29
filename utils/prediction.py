@@ -32,19 +32,20 @@ def retry_missing_predictions(df, endpoint_arn, _comprehend_client, max_retries=
         missing_texts = df.loc[missing_indices, 'Nachricht'].tolist()
         results = classify_documents(missing_texts, endpoint_arn, _comprehend_client)
         
-        for i, idx in enumerate(missing_indices):
-            result = results[i]
-            if result:
-                classes = result.get('Classes', [])
-                if classes:
-                    primary_class = classes[0]['Name']
-                    primary_score = classes[0]['Score'] * 100
-                    df.at[idx, 'Primary Class'] = primary_class
-                    df.at[idx, 'Primary Score'] = f"{primary_score:.2f}%"
-                    other_class_names = [cls['Name'] for cls in classes[1:]]
-                    other_class_scores = [cls['Score'] * 100 for cls in classes[1:]]
-                    df.at[idx, 'Other Classes'] = ", ".join(other_class_names)
-                    df.at[idx, 'Other Scores'] = ", ".join([f"{score:.2f}%" for score in other_class_scores])
+        if results:
+            for i, idx in enumerate(missing_indices):
+                result = results[i]
+                if result:
+                    classes = result.get('Classes', [])
+                    if classes:
+                        primary_class = classes[0]['Name']
+                        primary_score = classes[0]['Score'] * 100
+                        df.at[idx, 'Primary Class'] = primary_class
+                        df.at[idx, 'Primary Score'] = f"{primary_score:.2f}%"
+                        other_class_names = [cls['Name'] for cls in classes[1:]]
+                        other_class_scores = [cls['Score'] * 100 for cls in classes[1:]]
+                        df.at[idx, 'Other Classes'] = ", ".join(other_class_names)
+                        df.at[idx, 'Other Scores'] = ", ".join([f"{score:.2f}%" for score in other_class_scores])
         
         missing_indices = df[df['Primary Class'].isna()].index.tolist()
         retries += 1
@@ -72,28 +73,29 @@ def make_predictions(df, endpoint_arn, _comprehend_client, batch_size=25):
 
         results = classify_documents(batch_texts, endpoint_arn, _comprehend_client)
 
-        for result in results:
-            if result:
-                classes = result.get('Classes', [])
-                if classes:
-                    primary_class = classes[0]['Name']
-                    primary_score = classes[0]['Score'] * 100
-                    primary_classes.append(primary_class)
-                    primary_scores.append(f"{primary_score:.2f}%")
-                    other_class_names = [cls['Name'] for cls in classes[1:]]
-                    other_class_scores = [cls['Score'] * 100 for cls in classes[1:]]
-                    other_classes.append(", ".join(other_class_names))
-                    other_scores.append(", ".join([f"{score:.2f}%" for score in other_class_scores]))
+        if results:
+            for result in results:
+                if result:
+                    classes = result.get('Classes', [])
+                    if classes:
+                        primary_class = classes[0]['Name']
+                        primary_score = classes[0]['Score'] * 100
+                        primary_classes.append(primary_class)
+                        primary_scores.append(f"{primary_score:.2f}%")
+                        other_class_names = [cls['Name'] for cls in classes[1:]]
+                        other_class_scores = [cls['Score'] * 100 for cls in classes[1:]]
+                        other_classes.append(", ".join(other_class_names))
+                        other_scores.append(", ".join([f"{score:.2f}%" for score in other_class_scores]))
+                    else:
+                        primary_classes.append("")
+                        primary_scores.append("")
+                        other_classes.append("")
+                        other_scores.append("")
                 else:
                     primary_classes.append("")
                     primary_scores.append("")
                     other_classes.append("")
                     other_scores.append("")
-            else:
-                primary_classes.append("")
-                primary_scores.append("")
-                other_classes.append("")
-                other_scores.append("")
 
         progress_bar.progress((batch_num + 1) / total_batches)
 

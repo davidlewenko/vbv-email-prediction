@@ -3,19 +3,19 @@ import json
 import time
 import streamlit as st
 
-def classify_documents(text_list, endpoint_arn, comprehend_client, max_retries=10, initial_backoff=1):
+def classify_documents(text_list, endpoint_arn, _comprehend_client, max_retries=10, initial_backoff=1):
     retries = 0
     while retries < max_retries:
         try:
             responses = []
             for text in text_list:
-                response = comprehend_client.classify_document(
+                response = _comprehend_client.classify_document(
                     Text=text,
                     EndpointArn=endpoint_arn
                 )
                 responses.append(response)
             return responses
-        except comprehend_client.exceptions.TooManyRequestsException:
+        except _comprehend_client.exceptions.TooManyRequestsException:
             backoff = initial_backoff * (2 ** retries)
             time.sleep(backoff)
             retries += 1
@@ -24,13 +24,13 @@ def classify_documents(text_list, endpoint_arn, comprehend_client, max_retries=1
             return None
     return None
 
-def retry_missing_predictions(df, endpoint_arn, comprehend_client, max_retries=5):
+def retry_missing_predictions(df, endpoint_arn, _comprehend_client, max_retries=5):
     missing_indices = df[df['Primary Class'].isna()].index.tolist()
     retries = 0
     
     while missing_indices and retries < max_retries:
         missing_texts = df.loc[missing_indices, 'Nachricht'].tolist()
-        results = classify_documents(missing_texts, endpoint_arn, comprehend_client)
+        results = classify_documents(missing_texts, endpoint_arn, _comprehend_client)
         
         for i, idx in enumerate(missing_indices):
             result = results[i]
@@ -52,7 +52,7 @@ def retry_missing_predictions(df, endpoint_arn, comprehend_client, max_retries=5
     return df
 
 @st.cache_data
-def make_predictions(df, endpoint_arn, comprehend_client, batch_size=25):
+def make_predictions(df, endpoint_arn, _comprehend_client, batch_size=25):
     primary_classes = []
     primary_scores = []
     other_classes = []
@@ -70,7 +70,7 @@ def make_predictions(df, endpoint_arn, comprehend_client, batch_size=25):
         if not batch_texts:
             continue
 
-        results = classify_documents(batch_texts, endpoint_arn, comprehend_client)
+        results = classify_documents(batch_texts, endpoint_arn, _comprehend_client)
 
         for result in results:
             if result:
@@ -103,6 +103,6 @@ def make_predictions(df, endpoint_arn, comprehend_client, batch_size=25):
     df['Other Scores'] = other_scores
 
     # Retry missing predictions
-    df = retry_missing_predictions(df, endpoint_arn, comprehend_client)
+    df = retry_missing_predictions(df, endpoint_arn, _comprehend_client)
 
     return df

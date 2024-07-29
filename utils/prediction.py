@@ -3,16 +3,18 @@ import json
 import time
 import streamlit as st
 
-
-def classify_document(text, endpoint_arn, comprehend_client, max_retries=10, initial_backoff=1):
+def classify_documents(text_list, endpoint_arn, comprehend_client, max_retries=10, initial_backoff=1):
     retries = 0
     while retries < max_retries:
         try:
-            response = comprehend_client.classify_document(
-                Text=text,
-                EndpointArn=endpoint_arn
-            )
-            return response
+            responses = []
+            for text in text_list:
+                response = comprehend_client.classify_document(
+                    Text=text,
+                    EndpointArn=endpoint_arn
+                )
+                responses.append(response)
+            return responses
         except comprehend_client.exceptions.TooManyRequestsException:
             backoff = initial_backoff * (2 ** retries)
             time.sleep(backoff)
@@ -21,7 +23,6 @@ def classify_document(text, endpoint_arn, comprehend_client, max_retries=10, ini
             print(f"Error: {str(e)}")
             return None
     return None
-
 
 def retry_missing_predictions(df, endpoint_arn, comprehend_client, max_retries=5):
     missing_indices = df[df['Primary Class'].isna()].index.tolist()
@@ -49,7 +50,6 @@ def retry_missing_predictions(df, endpoint_arn, comprehend_client, max_retries=5
         retries += 1
     
     return df
-
 
 @st.cache_data
 def make_predictions(df, endpoint_arn, comprehend_client, batch_size=25):
@@ -101,4 +101,8 @@ def make_predictions(df, endpoint_arn, comprehend_client, batch_size=25):
     df['Primary Score'] = primary_scores
     df['Other Classes'] = other_classes
     df['Other Scores'] = other_scores
+
+    # Retry missing predictions
+    df = retry_missing_predictions(df, endpoint_arn, comprehend_client)
+
     return df

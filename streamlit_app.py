@@ -10,7 +10,7 @@ from streamlit_cognito_auth import CognitoAuthenticator
 
 from utils.comprehend_manager import AWSComprehendManager
 from utils.data_processing import preprocess_data, generate_synthetic_data, convert_df
-from utils.prediction import make_predictions, classify_document
+from utils.prediction import make_predictions
 
 # Retrieve environment variables
 model_arn = os.getenv('MODEL_ARN')
@@ -112,7 +112,7 @@ def process_uploaded_file(uploaded_file, use_synthetic_data):
         st.write(df)
 
         preprocessed_df = preprocess_data(df)
-        predicted_df = make_predictions(preprocessed_df, st.session_state.endpoint_arn, _comprehend_client=comprehend_client)
+        predicted_df = make_predictions(preprocessed_df, st.session_state.endpoint_arn, comprehend_client)
         st.write("Vorhersagen:")
         st.write(predicted_df)
 
@@ -182,8 +182,11 @@ if st.session_state.endpoint_ready:
         free_text = st.text_area("Geben Sie hier Ihren Text ein:")
         if st.button("Freitext klassifizieren"):
             if free_text:
-                result = classify_document(free_text, st.session_state.endpoint_arn, comprehend_client)
-                display_classification_result(result)
+                result = make_predictions(pd.DataFrame({'Nachricht': [free_text]}), st.session_state.endpoint_arn, comprehend_client)
+                if not result.empty:
+                    display_classification_result(result.iloc[0].to_dict())
+                else:
+                    st.write("Fehler beim Klassifizieren des Textes.")
             else:
                 st.write("Bitte geben Sie einen Text ein.")
 

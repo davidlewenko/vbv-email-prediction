@@ -26,6 +26,13 @@ def classify_documents(text_list, endpoint_arn, _comprehend_client, max_retries=
     # st.write("Max retries reached, some rows may not be predicted.")
     return None
 
+def make_single_prediction(text, endpoint_arn, _comprehend_client, max_retries=10, initial_backoff=2):
+    response = classify_documents([text], endpoint_arn, _comprehend_client, max_retries=max_retries, initial_backoff=initial_backoff)
+    if response:
+        return response[0]
+    return None
+
+
 def retry_missing_predictions(df, endpoint_arn, _comprehend_client, max_retries=10, initial_backoff=2):
     attempt = 0
     while True:

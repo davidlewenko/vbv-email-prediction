@@ -30,7 +30,7 @@ class AWSComprehendManager:
                 return endpoint_arn
         return None
 
-    def create_endpoint(self, model_arn, inference_units=8):
+    def create_endpoint(self, model_arn, inference_units=10):
         try:
             response = self.comprehend_client.create_endpoint(
                 EndpointName=f"vbv-frontend-endpoint-{self.now}",

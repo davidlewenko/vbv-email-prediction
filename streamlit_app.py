@@ -153,24 +153,24 @@ def update_endpoint_status(endpoint_arn):
         status_message.success("Endpoint ist jetzt aktiv und einsatzbereit.")
         st.session_state.endpoint_ready = True
     else:
-        status_message.error("Fehler bei der Erstellung des Endpunkts oder unerwarteter Zustand.")
+        status_message.error("Fehler bei der Erstellung des endpoints oder unerwarteter Zustand.")
 
 def check_or_create_endpoint():
     if st.session_state.endpoint_arn is None:
-        with st.spinner("Überprüfen oder Erstellen des AWS Comprehend Endpunkts..."):
+        with st.spinner("Überprüfen oder Erstellen des AWS Comprehend Endpoints..."):
             endpoint_arn = manager.find_active_endpoint()
             if not endpoint_arn:
                 endpoint_arn = manager.create_endpoint(model_arn)
                 if endpoint_arn:
                     st.session_state.endpoint_arn = endpoint_arn
-                    st.success(f"Endpunkt wird erstellt: {endpoint_arn}")
+                    st.success(f"Endpoint wird erstellt: {endpoint_arn}")
                     update_endpoint_status(endpoint_arn)
                 else:
-                    st.error("Fehler beim Erstellen des Endpunkts.")
+                    st.error("Fehler beim Erstellen des Endpoints.")
             else:
                 st.session_state.endpoint_arn = endpoint_arn
                 st.session_state.endpoint_ready = True
-                st.success(f"Verwendung des vorhandenen aktiven Endpunkts: {endpoint_arn}")
+                st.success(f"Verwendung des vorhandenen aktiven Endpoints: {endpoint_arn}")
     else:
         endpoint_arn = st.session_state.endpoint_arn
         update_endpoint_status(endpoint_arn)

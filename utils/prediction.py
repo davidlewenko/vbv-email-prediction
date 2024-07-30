@@ -28,10 +28,14 @@ def classify_documents(text_list, endpoint_arn, _comprehend_client, max_retries=
     return None
 
 def retry_missing_predictions(df, endpoint_arn, _comprehend_client):
-    missing_indices = df[df['Primary Class'].isna()].index.tolist()
     attempt = 0
     
-    while missing_indices:
+    while True:
+        missing_indices = df[df['Primary Class'].isna()].index.tolist()
+        if not missing_indices:
+            st.write("All rows have been successfully predicted.")
+            break
+
         attempt += 1
         st.write(f"Attempting to predict {len(missing_indices)} missing entries, attempt {attempt}")
         missing_texts = df.loc[missing_indices, 'Nachricht'].tolist()
@@ -51,12 +55,9 @@ def retry_missing_predictions(df, endpoint_arn, _comprehend_client):
                         other_class_scores = [cls['Score'] * 100 for cls in classes[1:]]
                         df.at[idx, 'Other Classes'] = ", ".join(other_class_names)
                         df.at[idx, 'Other Scores'] = ", ".join([f"{score:.2f}%" for score in other_class_scores])
-        
-        missing_indices = df[df['Primary Class'].isna()].index.tolist()
-    
-    if not missing_indices:
-        st.write("All rows have been successfully predicted.")
-    
+        else:
+            st.write("Error occurred while retrying missing predictions.")
+
     return df
 
 @st.cache_data
@@ -129,7 +130,7 @@ def make_predictions(df, endpoint_arn, _comprehend_client, batch_size=25):
     df['Other Classes'] = other_classes
     df['Other Scores'] = other_scores
 
-    # Retry missing predictions
+    # Retry missing predictions until all are processed
     df = retry_missing_predictions(df, endpoint_arn, _comprehend_client)
 
     return df

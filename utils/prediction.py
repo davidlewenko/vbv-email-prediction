@@ -4,7 +4,7 @@ import time
 import streamlit as st
 from botocore.exceptions import BotoCoreError, ClientError
 
-def classify_documents(text_list, endpoint_arn, _comprehend_client, max_retries=10, initial_backoff=8):
+def classify_documents(text_list, endpoint_arn, _comprehend_client, max_retries=10, initial_backoff=2):
     retries = 0
     while retries < max_retries:
         try:
@@ -27,19 +27,15 @@ def classify_documents(text_list, endpoint_arn, _comprehend_client, max_retries=
     st.write("Max retries reached, some rows may not be predicted.")
     return None
 
-def retry_missing_predictions(df, endpoint_arn, _comprehend_client):
+def retry_missing_predictions(df, endpoint_arn, _comprehend_client, initial_backoff=2):
+    missing_indices = df[df['Primary Class'].isna()].index.tolist()
     attempt = 0
-    
-    while True:
-        missing_indices = df[df['Primary Class'].isna()].index.tolist()
-        if not missing_indices:
-            st.write("All rows have been successfully predicted.")
-            break
 
+    while missing_indices:
         attempt += 1
-        st.write(f"Attempting to predict {len(missing_indices)} missing entries, attempt {attempt}")
+        st.write(f"Retrying {len(missing_indices)} missing predictions, attempt {attempt}")
         missing_texts = df.loc[missing_indices, 'Nachricht'].tolist()
-        results = classify_documents(missing_texts, endpoint_arn, _comprehend_client)
+        results = classify_documents(missing_texts, endpoint_arn, _comprehend_client, initial_backoff=initial_backoff)
         
         if results:
             for i, idx in enumerate(missing_indices):
@@ -55,13 +51,17 @@ def retry_missing_predictions(df, endpoint_arn, _comprehend_client):
                         other_class_scores = [cls['Score'] * 100 for cls in classes[1:]]
                         df.at[idx, 'Other Classes'] = ", ".join(other_class_names)
                         df.at[idx, 'Other Scores'] = ", ".join([f"{score:.2f}%" for score in other_class_scores])
+
+        missing_indices = df[df['Primary Class'].isna()].index.tolist()
+        if not missing_indices:
+            st.write("All rows have been successfully predicted.")
         else:
-            st.write("Error occurred while retrying missing predictions.")
+            st.write(f"Still {len(missing_indices)} rows left to predict. Retrying...")
 
     return df
 
 @st.cache_data
-def make_predictions(df, endpoint_arn, _comprehend_client, batch_size=5):  # Reduced batch size
+def make_predictions(df, endpoint_arn, _comprehend_client, batch_size=10):  # Reduced batch size
     primary_classes = [""] * len(df)
     primary_scores = [""] * len(df)
     other_classes = [""] * len(df)

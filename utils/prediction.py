@@ -1,5 +1,3 @@
-# prediction.py
-
 import time
 import streamlit as st
 from botocore.exceptions import BotoCoreError, ClientError
@@ -23,7 +21,8 @@ def classify_documents(text_list, endpoint_arn, _comprehend_client, max_retries=
             retries += 1
         except (BotoCoreError, ClientError) as e:
             st.write(f"Error during document classification: {str(e)}")
-            return None
+            retries += 1
+            time.sleep(initial_backoff * (2 ** retries))
     st.write("Max retries reached, some rows may not be predicted.")
     return None
 

@@ -4,7 +4,7 @@ import time
 import streamlit as st
 from botocore.exceptions import BotoCoreError, ClientError
 
-def classify_documents(text_list, endpoint_arn, _comprehend_client, max_retries=10, initial_backoff=1):
+def classify_documents(text_list, endpoint_arn, _comprehend_client, max_retries=10, initial_backoff=4):
     retries = 0
     while retries < max_retries:
         try:
@@ -61,7 +61,7 @@ def retry_missing_predictions(df, endpoint_arn, _comprehend_client):
     return df
 
 @st.cache_data
-def make_predictions(df, endpoint_arn, _comprehend_client, batch_size=25):
+def make_predictions(df, endpoint_arn, _comprehend_client, batch_size=10):  # Reduced batch size
     primary_classes = [""] * len(df)
     primary_scores = [""] * len(df)
     other_classes = [""] * len(df)

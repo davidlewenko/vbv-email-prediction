@@ -10,7 +10,7 @@ from streamlit_cognito_auth import CognitoAuthenticator
 
 from utils.comprehend_manager import AWSComprehendManager
 from utils.data_processing import preprocess_data, generate_synthetic_data, convert_df
-from utils.prediction import make_predictions, make_single_prediction
+from utils.prediction import make_predictions, make_single_prediction  # Import the new function
 
 # Retrieve environment variables
 model_arn = os.getenv('MODEL_ARN')
@@ -182,11 +182,14 @@ if st.session_state.endpoint_ready:
         free_text = st.text_area("Geben Sie hier Ihren Text ein:")
         if st.button("Freitext klassifizieren"):
             if free_text:
-                result = make_single_prediction(free_text, st.session_state.endpoint_arn, comprehend_client)
-                if not result.empty:
-                    display_classification_result(result.iloc[0].to_dict())
-                else:
-                    st.write("Fehler beim Klassifizieren des Textes.")
+                try:
+                    result = make_single_prediction(free_text, st.session_state.endpoint_arn, comprehend_client)
+                    if result:
+                        display_classification_result(result)
+                    else:
+                        st.write("Fehler beim Klassifizieren des Textes.")
+                except Exception as e:
+                    st.write(f"An error occurred: {str(e)}")
             else:
                 st.write("Bitte geben Sie einen Text ein.")
 

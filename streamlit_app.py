@@ -12,7 +12,7 @@ from utils.comprehend_manager import AWSComprehendManager
 from utils.data_processing import preprocess_data, generate_synthetic_data, convert_df
 from utils.prediction import make_predictions, make_single_prediction  # Import the new function
 
-# Retrieve environment variables
+# Retrieve environment variable
 model_arn = os.getenv('MODEL_ARN')
 pool_id = os.getenv("POOL_ID")
 app_client_id = os.getenv("APP_CLIENT_ID")

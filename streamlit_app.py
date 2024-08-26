@@ -10,9 +10,9 @@ from streamlit_cognito_auth import CognitoAuthenticator
 
 from utils.comprehend_manager import AWSComprehendManager
 from utils.data_processing import preprocess_data, generate_synthetic_data, convert_df
-from utils.prediction import make_predictions, make_single_prediction  # Import the new function
+from utils.prediction import make_predictions, make_single_prediction
 
-# Retrieve environment variable
+# Retrieve environment variables
 model_arn = os.getenv('MODEL_ARN')
 pool_id = os.getenv("POOL_ID")
 app_client_id = os.getenv("APP_CLIENT_ID")
@@ -21,34 +21,21 @@ aws_access_key_id = os.getenv('AWS_ACCESS_KEY_ID')
 aws_secret_access_key = os.getenv('AWS_SECRET_ACCESS_KEY')
 region_name = "eu-central-1"
 
-
-# Initialize Comprehend Manager
+# Initialize managers and clients
 manager = AWSComprehendManager(region_name=region_name, aws_access_key_id=aws_access_key_id, aws_secret_access_key=aws_secret_access_key)
-
-# Initialize boto3 client for Comprehend
-comprehend_client = boto3.client(
-    'comprehend',
-    region_name=region_name,
-    aws_access_key_id=aws_access_key_id,
-    aws_secret_access_key=aws_secret_access_key
-)
+comprehend_client = boto3.client('comprehend', region_name=region_name, aws_access_key_id=aws_access_key_id, aws_secret_access_key=aws_secret_access_key)
 
 # Set Streamlit page configuration
 st.set_page_config(page_title="VBV: E-Mail Classifier", layout="centered")
 
 # Initialize session state variables
-if 'endpoint_arn' not in st.session_state:
-    st.session_state.endpoint_arn = None
-if 'endpoint_ready' not in st.session_state:
-    st.session_state.endpoint_ready = False
+if 'service_arn' not in st.session_state:
+    st.session_state.service_arn = None
+if 'service_ready' not in st.session_state:
+    st.session_state.service_ready = False
 
 # Initialize Cognito Authenticator
-authenticator = CognitoAuthenticator(
-    pool_id=pool_id,
-    app_client_id=app_client_id,
-    app_client_secret=app_client_secret,
-    use_cookies=False
-)
+authenticator = CognitoAuthenticator(pool_id=pool_id, app_client_id=app_client_id, app_client_secret=app_client_secret, use_cookies=False)
 
 # Path to the logo image
 logo_path = 'assets/VBV_logo_alternative.png'
@@ -62,12 +49,8 @@ is_logged_in = authenticator.login()
 if not is_logged_in:
     with logo_placeholder.container():
         col1, col2, col3 = st.columns([1, 2, 1])
-        with col1:
-            st.write(' ')
         with col2:
             st.image(logo_path, width=350)
-            st.write(' ')
-        with col3:
             st.write(' ')
     st.stop()
 
@@ -78,6 +61,13 @@ with st.sidebar:
     st.image(logo_path, use_column_width=True)
     st.text(f"Willkommen,\n{authenticator.get_username()}")
     st.button("Abmelden", "logout_btn", on_click=logout)
+
+def handle_error(error):
+    generic_error_message = "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut."
+    if isinstance(error, boto3.exceptions.Boto3Error):
+        return generic_error_message
+    elif isinstance(error, Exception):
+        return generic_error_message
 
 def display_classification_result(result):
     if result:
@@ -113,7 +103,7 @@ def process_uploaded_file(uploaded_file, use_synthetic_data):
         st.write(df)
 
         preprocessed_df = preprocess_data(df)
-        predicted_df = make_predictions(preprocessed_df, st.session_state.endpoint_arn, comprehend_client)
+        predicted_df = make_predictions(preprocessed_df, st.session_state.service_arn, comprehend_client)
         st.write("Vorhersagen:")
         st.write(predicted_df)
 
@@ -121,17 +111,21 @@ def process_uploaded_file(uploaded_file, use_synthetic_data):
 
         csv = convert_df(predicted_df)
         st.download_button(label="Daten als CSV herunterladen", data=csv, file_name='vorhersagen.csv', mime='text/csv')
-    except pd.errors.ParserError as e:
-        st.error(f"Fehler beim Parsen der Datei: {e}")
     except Exception as e:
-        st.error(f"Ein Fehler ist aufgetreten: {e}")
+        error_message = handle_error(e)
+        st.error(error_message)
 
 def read_csv_file(uploaded_file):
-    raw_data = uploaded_file.read()
-    result = chardet.detect(raw_data)
-    encoding = result['encoding']
-    uploaded_file.seek(0)
-    return pd.read_csv(StringIO(raw_data.decode(encoding)), sep=None, engine='python')
+    try:
+        raw_data = uploaded_file.read()
+        result = chardet.detect(raw_data)
+        encoding = result['encoding']
+        uploaded_file.seek(0)
+        return pd.read_csv(StringIO(raw_data.decode(encoding)), sep=None, engine='python')
+    except Exception as e:
+        error_message = handle_error(e)
+        st.error(error_message)
+        return None
 
 def display_analysis(predicted_df):
     analysis = predicted_df['Primary Class'].value_counts()
@@ -143,54 +137,63 @@ def display_analysis(predicted_df):
     ax.set_ylabel('Anzahl')
     st.pyplot(fig)
 
-def update_endpoint_status(endpoint_arn):
-    status = manager.check_endpoint_status(endpoint_arn)
-    status_message = st.empty()
-    while status == "CREATING":
-        status_message.info("Endpoint wird erstellt... Das kann einige Minuten in Anspruch nehmen.")
-        time.sleep(30)
-        status = manager.check_endpoint_status(endpoint_arn)
-    if status == "IN_SERVICE":
-        status_message.success("Endpoint ist jetzt aktiv und einsatzbereit.")
-        st.session_state.endpoint_ready = True
-    else:
-        status_message.error("Fehler bei der Erstellung des endpoints oder unerwarteter Zustand.")
+def update_service_status(service_arn):
+    try:
+        status = manager.check_endpoint_status(service_arn)
+        status_message = st.empty()
+        while status == "CREATING":
+            status_message.info("Dienst wird vorbereitet... Dies kann einige Minuten dauern.")
+            time.sleep(30)
+            status = manager.check_endpoint_status(service_arn)
+        if status == "IN_SERVICE":
+            status_message.success("Der Dienst ist jetzt aktiv und einsatzbereit.")
+            st.session_state.service_ready = True
+        else:
+            status_message.error("Es gab ein Problem bei der Vorbereitung des Dienstes. Bitte versuchen Sie es später erneut.")
+    except Exception as e:
+        error_message = handle_error(e)
+        st.error(error_message)
 
-def check_or_create_endpoint():
-    if st.session_state.endpoint_arn is None:
-        with st.spinner("Überprüfen oder Erstellen des AWS Comprehend Endpoints..."):
-            endpoint_arn = manager.find_active_endpoint()
-            if not endpoint_arn:
-                endpoint_arn = manager.create_endpoint(model_arn)
-                if endpoint_arn:
-                    st.session_state.endpoint_arn = endpoint_arn
-                    st.success(f"Endpoint wird erstellt: {endpoint_arn}")
-                    update_endpoint_status(endpoint_arn)
+def check_or_create_service():
+    if st.session_state.service_arn is None:
+        with st.spinner("Überprüfen oder Erstellen des Klassifizierungsdienstes..."):
+            try:
+                service_arn = manager.find_active_endpoint()
+                if not service_arn:
+                    service_arn = manager.create_endpoint(model_arn)
+                    if service_arn:
+                        st.session_state.service_arn = service_arn
+                        st.success(f"Klassifizierungsdienst wird vorbereitet!")
+                        update_service_status(service_arn)
+                    else:
+                        st.error("Fehler beim Vorbereiten des Klassifizierungsdienstes.")
                 else:
-                    st.error("Fehler beim Erstellen des Endpoints.")
-            else:
-                st.session_state.endpoint_arn = endpoint_arn
-                st.session_state.endpoint_ready = True
-                st.success(f"Verwendung des vorhandenen aktiven Endpoints: {endpoint_arn}")
+                    st.session_state.service_arn = service_arn
+                    st.session_state.service_ready = True
+                    st.success(f"Verwendung des vorhandenen Klassifizierungsdienstes!")
+            except Exception as e:
+                error_message = handle_error(e)
+                st.error(error_message)
     else:
-        endpoint_arn = st.session_state.endpoint_arn
-        update_endpoint_status(endpoint_arn)
+        service_arn = st.session_state.service_arn
+        update_service_status(service_arn)
 
-check_or_create_endpoint()
+check_or_create_service()
 
-if st.session_state.endpoint_ready:
+if st.session_state.service_ready:
     with st.expander("Freitext eingeben"):
         free_text = st.text_area("Geben Sie hier Ihren Text ein:")
         if st.button("Freitext klassifizieren"):
             if free_text:
                 try:
-                    result = make_single_prediction(free_text, st.session_state.endpoint_arn, comprehend_client)
+                    result = make_single_prediction(free_text, st.session_state.service_arn, comprehend_client)
                     if result:
                         display_classification_result(result)
                     else:
                         st.write("Fehler beim Klassifizieren des Textes.")
                 except Exception as e:
-                    st.write(f"An error occurred: {str(e)}")
+                    error_message = handle_error(e)
+                    st.error(error_message)
             else:
                 st.write("Bitte geben Sie einen Text ein.")
 
@@ -202,3 +205,4 @@ if st.session_state.endpoint_ready:
 
         if uploaded_file is not None or use_synthetic_data:
             process_uploaded_file(uploaded_file, use_synthetic_data)
+            

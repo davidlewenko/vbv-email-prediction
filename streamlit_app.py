@@ -36,14 +36,6 @@ comprehend_client = boto3.client(
 # Set Streamlit page configuration
 st.set_page_config(page_title="VBV: E-Mail Classifier", layout="centered")
 
-hide = """
-    <style>
-        #MainMenu {visibility: hidden;}
-        footer {visibility: hidden;}
-    </style>
-"""
-st.markdown(hide, unsafe_allow_html=True)
-
 # Initialize session state variables
 if 'endpoint_arn' not in st.session_state:
     st.session_state.endpoint_arn = None

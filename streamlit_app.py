@@ -28,6 +28,14 @@ comprehend_client = boto3.client('comprehend', region_name=region_name, aws_acce
 # Set Streamlit page configuration
 st.set_page_config(page_title="VBV: E-Mail Classifier!", layout="centered")
 
+hide_streamlit_style = """
+            <style>
+            [data-testid="stToolbar"] {visibility: hidden !important;}
+            footer {visibility: hidden !important;}
+            </style>
+            """
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
 # Initialize session state variables
 if 'service_arn' not in st.session_state:
     st.session_state.service_arn = None

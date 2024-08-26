@@ -26,7 +26,7 @@ manager = AWSComprehendManager(region_name=region_name, aws_access_key_id=aws_ac
 comprehend_client = boto3.client('comprehend', region_name=region_name, aws_access_key_id=aws_access_key_id, aws_secret_access_key=aws_secret_access_key)
 
 # Set Streamlit page configuration
-st.set_page_config(page_title="VBV: E-Mail Classifier", layout="centered")
+st.set_page_config(page_title="VBV: E-Mail Classifier!", layout="centered")
 
 # Initialize session state variables
 if 'service_arn' not in st.session_state:

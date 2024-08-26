@@ -28,13 +28,6 @@ comprehend_client = boto3.client('comprehend', region_name=region_name, aws_acce
 # Set Streamlit page configuration
 st.set_page_config(page_title="VBV: E-Mail Classifier!", layout="centered")
 
-hide_streamlit_style = """
-            <style>
-            footer {visibility: hidden !important;}
-            </style>
-            """
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
-
 # Initialize session state variables
 if 'service_arn' not in st.session_state:
     st.session_state.service_arn = None
@@ -70,11 +63,7 @@ with st.sidebar:
     st.button("Abmelden", "logout_btn", on_click=logout)
 
 def handle_error(error):
-    generic_error_message = "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut."
-    if isinstance(error, boto3.exceptions.Boto3Error):
-        return generic_error_message
-    elif isinstance(error, Exception):
-        return generic_error_message
+    return "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut."
 
 def display_classification_result(result):
     if result:
@@ -119,8 +108,7 @@ def process_uploaded_file(uploaded_file, use_synthetic_data):
         csv = convert_df(predicted_df)
         st.download_button(label="Daten als CSV herunterladen", data=csv, file_name='vorhersagen.csv', mime='text/csv')
     except Exception as e:
-        error_message = handle_error(e)
-        st.error(error_message)
+        st.error(handle_error(e))
 
 def read_csv_file(uploaded_file):
     try:
@@ -130,8 +118,7 @@ def read_csv_file(uploaded_file):
         uploaded_file.seek(0)
         return pd.read_csv(StringIO(raw_data.decode(encoding)), sep=None, engine='python')
     except Exception as e:
-        error_message = handle_error(e)
-        st.error(error_message)
+        st.error(handle_error(e))
         return None
 
 def display_analysis(predicted_df):
@@ -158,8 +145,7 @@ def update_service_status(service_arn):
         else:
             status_message.error("Es gab ein Problem bei der Vorbereitung des Dienstes. Bitte versuchen Sie es später erneut.")
     except Exception as e:
-        error_message = handle_error(e)
-        st.error(error_message)
+        st.error(handle_error(e))
 
 def check_or_create_service():
     if st.session_state.service_arn is None:
@@ -179,8 +165,7 @@ def check_or_create_service():
                     st.session_state.service_ready = True
                     st.success(f"Verwendung des vorhandenen Klassifizierungsdienstes!")
             except Exception as e:
-                error_message = handle_error(e)
-                st.error(error_message)
+                st.error(handle_error(e))
     else:
         service_arn = st.session_state.service_arn
         update_service_status(service_arn)
@@ -199,8 +184,7 @@ if st.session_state.service_ready:
                     else:
                         st.write("Fehler beim Klassifizieren des Textes.")
                 except Exception as e:
-                    error_message = handle_error(e)
-                    st.error(error_message)
+                    st.error(handle_error(e))
             else:
                 st.write("Bitte geben Sie einen Text ein.")
 
@@ -212,4 +196,3 @@ if st.session_state.service_ready:
 
         if uploaded_file is not None or use_synthetic_data:
             process_uploaded_file(uploaded_file, use_synthetic_data)
-            

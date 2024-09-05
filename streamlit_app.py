@@ -47,14 +47,6 @@ logo_placeholder = st.empty()
 # User authentication
 is_logged_in = authenticator.login()
 
-hide = """
-    <style>
-        #MainMenu {visibility: hidden;}
-        footer {visibility: hidden;}
-    </style>
-"""
-st.markdown(hide, unsafe_allow_html=True)
-
 if not is_logged_in:
     with logo_placeholder.container():
         col1, col2, col3 = st.columns([1, 2, 1])

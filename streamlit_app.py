@@ -37,7 +37,7 @@ if 'service_ready' not in st.session_state:
 # Initialize Cognito Authenticator
 authenticator = CognitoAuthenticator(pool_id=pool_id, app_client_id=app_client_id, app_client_secret=app_client_secret, use_cookies=False)
 
-# Path to the logo image
+# Path to the logo imag
 logo_path = 'assets/VBV_logo_alternative.png'
 
 # Create a placeholder for the logo

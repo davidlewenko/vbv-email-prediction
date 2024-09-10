@@ -44,7 +44,7 @@ logo_path = 'assets/VBV_logo_alternative.png'
 # Create a placeholder for the logo
 logo_placeholder = st.empty()
 
-# User authenticatio
+# User authenticationn
 is_logged_in = authenticator.login()
 
 if not is_logged_in:

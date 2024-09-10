@@ -64,7 +64,7 @@ with st.sidebar:
     st.button("Abmelden", "logout_btn", on_click=logout)
 
 def handle_error(error):
-    return "Ein unerwarteter Fehler ist aufgetreten! Bitte versuchen Sie es später erneut."
+    return "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut."
 
 def display_classification_result(result):
     if result:

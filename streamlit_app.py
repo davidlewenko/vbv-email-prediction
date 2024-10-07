@@ -27,7 +27,7 @@ comprehend_client = boto3.client('comprehend', region_name=region_name, aws_acce
 
 
 # Set Streamlit page configuration
-st.set_page_config(page_title="VBV: E-Mail Classifier", layout="centered")
+st.set_page_config(page_title="VBV: E-Mail Classifier")
 
 # Initialize session state variable
 if 'service_arn' not in st.session_state:

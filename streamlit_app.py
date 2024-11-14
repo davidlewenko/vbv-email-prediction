@@ -51,8 +51,16 @@ if not is_logged_in:
     with logo_placeholder.container():
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            st.image(logo_path, width=350)
+            # Center the image in the middle column
+            st.markdown(
+            "<div style='display: flex; justify-content: center;'>",
+            unsafe_allow_html=True
+            )
+            st.image(logo_path, width=245)
+            st.markdown("</div>", unsafe_allow_html=True)
             st.write(' ')
+            #st.image(logo_path, width=350)
+            #st.write(' ')
     st.stop()
 
 def logout():

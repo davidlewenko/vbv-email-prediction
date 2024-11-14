@@ -51,7 +51,7 @@ if not is_logged_in:
     with logo_placeholder.container():
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            st.image(logo_path, width=350)
+            st.image(logo_path, width=245)
             st.write(' ')
     st.stop()
 

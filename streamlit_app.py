@@ -49,7 +49,7 @@ is_logged_in = authenticator.login()
 
 if not is_logged_in:
     with logo_placeholder.container():
-        col1, col2, col3, col4, col5 = st.columns([1, 2, 1])
+        col1, col2, col3, col4, col5 = st.columns([1, 1, 2, 1, 1])
         with col3:
             st.image(logo_path)
             st.write(' ')
